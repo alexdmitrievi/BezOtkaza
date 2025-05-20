@@ -1,43 +1,33 @@
 import os
 import logging
-from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder, CommandHandler, MessageHandler,
-    ContextTypes, filters
-)
+import openai
 from openai import OpenAI
+from telegram import Update
+from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
 
-# ключи
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-client = OpenAI(
-    api_key=os.getenv("OPENROUTER_API_KEY"),
-    base_url="https://openrouter.ai/api/v1"
-)
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# логирование
 logging.basicConfig(level=logging.INFO)
 
-# /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("👋 Бот запущен. Напиши вопрос по кредитованию.")
+    await update.message.reply_text("✅ Бот запущен. Напиши любой вопрос, и я проверю GPT.")
 
-# GPT-ответ
 async def gpt_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        user_input = update.message.text
+        user_question = update.message.text
         response = client.chat.completions.create(
-            model="openai/gpt-3.5-turbo",
+            model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "Ты банковский менеджер, отвечай ясно и дружелюбно."},
-                {"role": "user", "content": user_input}
+                {"role": "system", "content": "Ты вежливый и понятный менеджер банка, который консультирует клиента по вопросам кредитования физических лиц. Отвечай кратко, по делу, дружелюбно."},
+                {"role": "user", "content": user_question}
             ]
         )
         await update.message.reply_text(response.choices[0].message.content)
     except Exception as e:
         logging.error(f"GPT ERROR: {e}")
-        await update.message.reply_text("❌ GPT временно недоступен.")
+        await update.message.reply_text("❌ GPT API не отвечает. Проверь ключ или повтори позже.")
 
-# точка входа
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
@@ -46,6 +36,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
