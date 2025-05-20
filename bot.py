@@ -7,17 +7,12 @@ import openai
 import os
 from datetime import datetime
 import traceback
-import asyncio
 
-# Загрузка токенов
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 openai.api_key = OPENAI_API_KEY
 
-# Логирование
 logging.basicConfig(level=logging.INFO)
-
-# Google Sheets
 
 def init_sheet():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -31,9 +26,7 @@ ASK_NAME, ASK_AGE, ASK_ARREST, ASK_OVERDUE, ASK_AMOUNT, CONFIRM = range(6)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["source"] = update.message.text.split(" ")[1] if len(update.message.text.split(" ")) > 1 else "direct"
-    await update.message.reply_text(
-        "👋 Привет! Я помогу вам подать заявку на кредит.\n\nВведите ваше ФИО:"
-    )
+    await update.message.reply_text("👋 Привет! Я помогу вам подать заявку на кредит.\n\nВведите ваше ФИО:")
     return ASK_NAME
 
 async def ask_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -98,7 +91,7 @@ async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["overdue"],
         context.user_data["amount"]
     ])
-    await update.callback_query.edit_message_text("✅ Заявка отправлена! Наш менеджер скоро свяжется с вами.")
+    await update.callback_query.edit_message_text("✅ Заявка отправлена! Наш менеджер скоро свяжется с вами.\n\nЕсли у вас есть вопросы, можете задать их прямо здесь 🤖")
     return ConversationHandler.END
 
 async def edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -123,19 +116,26 @@ async def gpt_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_question = update.message.text
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": user_question}]
+            messages=[
+                {"role": "system", "content": "Ты вежливый и понятный менеджер банка, который консультирует клиента по вопросам кредитования физических лиц. Отвечай кратко, по делу, дружелюбно."},
+                {"role": "user", "content": user_question}
+            ]
         )
         await update.message.reply_text(response["choices"][0]["message"]["content"])
     except Exception as e:
         logging.error(traceback.format_exc())
         await update.message.reply_text("🤖 Произошла ошибка при обращении к GPT. Попробуйте позже.")
 
+async def ask_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("💬 Задайте ваш вопрос по кредитованию. Я постараюсь помочь как менеджер банка.")
+
 async def set_menu(bot):
     await bot.set_my_commands([
         BotCommand("start", "Начать оформление заявки"),
         BotCommand("help", "Помощь и частые вопросы"),
         BotCommand("cancel", "Отменить заявку"),
-        BotCommand("restart", "Перезапустить бота")
+        BotCommand("restart", "Перезапустить бота"),
+        BotCommand("ask", "Задать вопрос менеджеру")
     ])
 
 def main():
@@ -162,9 +162,9 @@ def main():
     app.add_handler(CommandHandler("restart", restart))
     app.add_handler(CommandHandler("cancel", cancel))
     app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("ask", ask_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, gpt_reply))
 
-    # ✅ Важно: передаём application в startup
     async def startup(application):
         await set_menu(application.bot)
 
