@@ -1,6 +1,5 @@
 import os
 import logging
-import openai
 from openai import OpenAI
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand
 from telegram.ext import (
@@ -104,8 +103,12 @@ async def restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.callback_query.edit_message_text("🔁 Перезапуск бота...\nВведите /start для начала.")
     return ConversationHandler.END
 
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("❌ Операция отменена. Введите /start для новой заявки.")
+    return ConversationHandler.END
+
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("ℹ️ Чтобы начать оформление заявки, введите /start.\nЕсли у вас есть вопрос — нажмите кнопку 'Задать вопрос менеджеру' в анкете.")
+    await update.message.reply_text("ℹ️ Чтобы начать оформление заявки, введите /start.\nЕсли у вас есть вопрос — используйте кнопку в анкете.")
 
 async def ask_gpt(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.callback_query.answer()
@@ -144,16 +147,29 @@ def main():
                 CallbackQueryHandler(ask_gpt, pattern="^ask$")
             ],
         },
-        fallbacks=[CommandHandler("cancel", restart)]
+        fallbacks=[CommandHandler("cancel", cancel)]
     )
 
     app.add_handler(conv_handler)
+    app.add_handler(CommandHandler("restart", restart))
+    app.add_handler(CommandHandler("cancel", cancel))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, gpt_reply))
+
+    async def startup(application):
+        await application.bot.set_my_commands([
+            BotCommand("start", "Начать оформление заявки"),
+            BotCommand("help", "Помощь и частые вопросы"),
+            BotCommand("cancel", "Отменить заявку"),
+            BotCommand("restart", "Перезапустить бота")
+        ])
+
+    app.post_init = startup
     app.run_polling()
 
 if __name__ == "__main__":
     main()
+
 
 
 
