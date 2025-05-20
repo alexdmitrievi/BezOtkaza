@@ -95,8 +95,11 @@ async def edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ASK_NAME
 
 async def restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.callback_query.answer()
-    await update.callback_query.edit_message_text("🔁 Перезапуск бота...\nВведите /start для начала.")
+    if update.callback_query:
+        await update.callback_query.answer()
+        await update.callback_query.edit_message_text("🔁 Перезапуск бота...\nВведите /start для начала.")
+    else:
+        await update.message.reply_text("🔁 Перезапуск бота...\nВведите /start для начала.")
     return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
