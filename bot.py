@@ -138,7 +138,7 @@ async def set_menu(bot):
         BotCommand("restart", "Перезапустить бота")
     ])
 
-def main():
+async def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     conv_handler = ConversationHandler(
@@ -164,10 +164,11 @@ def main():
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, gpt_reply))
 
-    asyncio.run(set_menu(app.bot))
-    app.run_polling()
+    await set_menu(app.bot)
+    await app.run_polling()
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+    asyncio.run(main())
 
 
