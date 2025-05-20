@@ -1,7 +1,9 @@
-import openai
-from openai import OpenAI
 import os
 import logging
+import openai
+from openai import OpenAI
+from telegram import Update
+from telegram.ext import ContextTypes
 
 # Создаём клиента с указанием base_url и ключа
 client = OpenAI(
