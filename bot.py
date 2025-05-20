@@ -1,7 +1,7 @@
 import os
 import logging
 from openai import OpenAI
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import (
     ApplicationBuilder, ContextTypes, CommandHandler,
     MessageHandler, CallbackQueryHandler, ConversationHandler, filters
@@ -26,20 +26,27 @@ sheet = init_sheet()
 ASK_NAME, ASK_AGE, ASK_ARREST, ASK_OVERDUE, ASK_AMOUNT, CONFIRM = range(6)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data["source"] = update.message.text.split(" ")[1] if len(update.message.text.split(" ")) > 1 else "direct"
-    buttons = [
-        [InlineKeyboardButton("📝 Заполнить заявку", callback_data="start_form")],
-        [InlineKeyboardButton("💬 Связаться с менеджером", callback_data="ask")]
-    ]
+    keyboard = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton("📝 Оставить заявку"), KeyboardButton("💬 Связаться с менеджером")]
+        ], resize_keyboard=True, one_time_keyboard=True
+    )
     await update.message.reply_text(
-        "👋 Привет! Я помогу вам оформить кредит или задать вопрос. Выберите действие:",
-        reply_markup=InlineKeyboardMarkup(buttons)
+        "👋 Привет! Выберите, что хотите сделать:",
+        reply_markup=keyboard
     )
 
-async def start_form(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.callback_query.answer()
-    await update.callback_query.message.edit_text("Введите ваше ФИО:")
-    return ASK_NAME
+async def handle_reply_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if text == "📝 Оставить заявку":
+        await update.message.reply_text("Введите ваше ФИО:")
+        return ASK_NAME
+    elif text == "💬 Связаться с менеджером":
+        await update.message.reply_text("💬 Задайте ваш вопрос, я отвечу как менеджер банка.")
+        return ConversationHandler.END
+    else:
+        await update.message.reply_text("Пожалуйста, используйте кнопки ниже.")
+        return ConversationHandler.END
 
 async def ask_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["name"] = update.message.text
@@ -74,7 +81,6 @@ async def show_summary(update_or_callback, context: ContextTypes.DEFAULT_TYPE):
     buttons = [
         [InlineKeyboardButton("✅ Отправить", callback_data="confirm")],
         [InlineKeyboardButton("✏️ Редактировать заявку", callback_data="edit")],
-        [InlineKeyboardButton("💬 Связаться с менеджером", callback_data="ask")],
         [InlineKeyboardButton("🔁 Перезапустить", callback_data="restart")]
     ]
     if hasattr(update_or_callback, "message"):
@@ -97,7 +103,7 @@ async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["overdue"],
         context.user_data["amount"]
     ])
-    await update.callback_query.edit_message_text("✅ Заявка отправлена! Наш менеджер скоро свяжется с вами.\n\nЕсли у вас есть вопросы, нажмите кнопку ниже.")
+    await update.callback_query.edit_message_text("✅ Заявка отправлена! Наш менеджер скоро свяжется с вами.")
     return ConversationHandler.END
 
 async def edit(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -118,11 +124,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("ℹ️ Чтобы начать оформление заявки, введите /start.\nЕсли у вас есть вопрос — используйте кнопку в анкете.")
-
-async def ask_gpt(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.callback_query.answer()
-    await update.callback_query.message.reply_text("💬 Задайте ваш вопрос, я отвечу как менеджер банка.")
+    await update.message.reply_text("ℹ️ Чтобы начать оформление заявки, введите /start и используйте кнопки под полем ввода.")
 
 async def gpt_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -143,7 +145,7 @@ def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     conv_handler = ConversationHandler(
-        entry_points=[CallbackQueryHandler(start_form, pattern="^start_form$")],
+        entry_points=[MessageHandler(filters.Regex("^📝 Оставить заявку$"), handle_reply_buttons)],
         states={
             ASK_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_name)],
             ASK_AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_age)],
@@ -153,8 +155,7 @@ def main():
             CONFIRM: [
                 CallbackQueryHandler(confirm, pattern="^confirm$"),
                 CallbackQueryHandler(edit, pattern="^edit$"),
-                CallbackQueryHandler(restart, pattern="^restart$"),
-                CallbackQueryHandler(ask_gpt, pattern="^ask$")
+                CallbackQueryHandler(restart, pattern="^restart$")
             ],
         },
         fallbacks=[CommandHandler("cancel", cancel)]
@@ -165,6 +166,7 @@ def main():
     app.add_handler(CommandHandler("restart", restart))
     app.add_handler(CommandHandler("cancel", cancel))
     app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(MessageHandler(filters.Regex("^💬 Связаться с менеджером$"), handle_reply_buttons))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, gpt_reply))
 
     async def startup(application):
@@ -180,6 +182,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
