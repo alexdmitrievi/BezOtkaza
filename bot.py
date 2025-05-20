@@ -27,7 +27,18 @@ ASK_NAME, ASK_AGE, ASK_ARREST, ASK_OVERDUE, ASK_AMOUNT, CONFIRM = range(6)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["source"] = update.message.text.split(" ")[1] if len(update.message.text.split(" ")) > 1 else "direct"
-    await update.message.reply_text("👋 Привет! Я помогу вам подать заявку на кредит.\n\nВведите ваше ФИО:")
+    buttons = [
+        [InlineKeyboardButton("📝 Заполнить заявку", callback_data="start_form")],
+        [InlineKeyboardButton("💬 Связаться с менеджером", callback_data="ask")]
+    ]
+    await update.message.reply_text(
+        "👋 Привет! Я помогу вам оформить кредит или задать вопрос. Выберите действие:",
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
+
+async def start_form(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.callback_query.answer()
+    await update.callback_query.message.edit_text("Введите ваше ФИО:")
     return ASK_NAME
 
 async def ask_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -132,7 +143,7 @@ def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
+        entry_points=[CallbackQueryHandler(start_form, pattern="^start_form$")],
         states={
             ASK_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_name)],
             ASK_AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_age)],
@@ -150,6 +161,7 @@ def main():
     )
 
     app.add_handler(conv_handler)
+    app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("restart", restart))
     app.add_handler(CommandHandler("cancel", cancel))
     app.add_handler(CommandHandler("help", help_command))
