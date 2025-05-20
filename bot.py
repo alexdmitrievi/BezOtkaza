@@ -32,9 +32,7 @@ ASK_NAME, ASK_AGE, ASK_ARREST, ASK_OVERDUE, ASK_AMOUNT, CONFIRM = range(6)
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["source"] = update.message.text.split(" ")[1] if len(update.message.text.split(" ")) > 1 else "direct"
     await update.message.reply_text(
-        "👋 Привет! Я помогу вам подать заявку на кредит.
-
-Введите ваше ФИО:"
+    "👋 Привет! Я помогу вам подать заявку на кредит.\n\nВведите ваше ФИО:"
     )
     return ASK_NAME
 
