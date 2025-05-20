@@ -1,5 +1,5 @@
 import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ConversationHandler
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -7,6 +7,7 @@ import openai
 import os
 from datetime import datetime
 import traceback
+import asyncio
 
 # Загрузка токенов
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -17,6 +18,7 @@ openai.api_key = OPENAI_API_KEY
 logging.basicConfig(level=logging.INFO)
 
 # Google Sheets
+
 def init_sheet():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
@@ -25,14 +27,12 @@ def init_sheet():
 
 sheet = init_sheet()
 
-# Состояния
 ASK_NAME, ASK_AGE, ASK_ARREST, ASK_OVERDUE, ASK_AMOUNT, CONFIRM = range(6)
 
-# Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["source"] = update.message.text.split(" ")[1] if len(update.message.text.split(" ")) > 1 else "direct"
     await update.message.reply_text(
-    "👋 Привет! Я помогу вам подать заявку на кредит.\n\nВведите ваше ФИО:"
+        "👋 Привет! Я помогу вам подать заявку на кредит.\n\nВведите ваше ФИО:"
     )
     return ASK_NAME
 
@@ -130,6 +130,14 @@ async def gpt_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logging.error(traceback.format_exc())
         await update.message.reply_text("🤖 Произошла ошибка при обращении к GPT. Попробуйте позже.")
 
+async def set_menu(bot):
+    await bot.set_my_commands([
+        BotCommand("start", "Начать оформление заявки"),
+        BotCommand("help", "Помощь и частые вопросы"),
+        BotCommand("cancel", "Отменить заявку"),
+        BotCommand("restart", "Перезапустить бота")
+    ])
+
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
@@ -156,8 +164,10 @@ def main():
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, gpt_reply))
 
+    asyncio.run(set_menu(app.bot))
     app.run_polling()
 
 if __name__ == "__main__":
     main()
+
 
