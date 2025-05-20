@@ -2,6 +2,11 @@ import os
 import logging
 import openai
 from openai import OpenAI
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand
+from telegram.ext import (
+    ApplicationBuilder, ContextTypes, CommandHandler,
+    MessageHandler, filters, CallbackQueryHandler, ConversationHandler
+)
 
 # создаём клиент с API-ключом
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
