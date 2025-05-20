@@ -23,7 +23,7 @@ def init_sheet():
 
 sheet = init_sheet()
 
-ASK_NAME, ASK_AGE, ASK_ARREST, ASK_OVERDUE, ASK_AMOUNT, CONFIRM = range(6)
+ASK_NAME, ASK_AGE, ASK_ARREST, ASK_OVERDUE, ASK_AMOUNT, ASK_PHONE, CONFIRM = range(7)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = ReplyKeyboardMarkup(
@@ -74,10 +74,15 @@ async def ask_overdue(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def ask_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["amount"] = update.message.text
+    await update.message.reply_text("Введите ваш номер телефона:")
+    return ASK_PHONE
+
+async def ask_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data["phone"] = update.message.text
     return await show_summary(update, context)
 
 async def show_summary(update_or_callback, context: ContextTypes.DEFAULT_TYPE):
-    summary = f"""📋 Ваша заявка:\n\nФИО: {context.user_data['name']}\nВозраст: {context.user_data['age']}\nАресты: {context.user_data['arrest']}\nПросрочки: {context.user_data['overdue']}\nСумма: {context.user_data['amount']}"""
+    summary = f"""📋 Ваша заявка:\n\nФИО: {context.user_data['name']}\nВозраст: {context.user_data['age']}\nАресты: {context.user_data['arrest']}\nПросрочки: {context.user_data['overdue']}\nСумма: {context.user_data['amount']}\nТелефон: {context.user_data['phone']}"""
     buttons = [
         [InlineKeyboardButton("✅ Отправить", callback_data="confirm")],
         [InlineKeyboardButton("✏️ Редактировать заявку", callback_data="edit")],
@@ -101,7 +106,8 @@ async def confirm(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["age"],
         context.user_data["arrest"],
         context.user_data["overdue"],
-        context.user_data["amount"]
+        context.user_data["amount"],
+        context.user_data["phone"]
     ])
     await update.callback_query.edit_message_text("✅ Заявка отправлена! Наш менеджер скоро свяжется с вами.")
     return ConversationHandler.END
@@ -131,7 +137,6 @@ async def gpt_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_question = update.message.text
         if user_question in ["📝 Оставить заявку", "💬 Связаться с менеджером"]:
             return
-
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -139,16 +144,12 @@ async def gpt_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 {"role": "user", "content": user_question}
             ]
         )
-
         response_text = response.choices[0].message.content.strip()
         lowered = response_text.lower()
-
         redirect_phrases = ["обратитесь в банк", "обратитесь в ваш банк", "обратитесь в отделение", "необходимо обратиться"]
         if any(phrase in lowered for phrase in redirect_phrases):
             response_text += "\n\n💡 Вы можете оставить заявку прямо здесь — и мы свяжемся с вами сами. Просто нажмите «📝 Оставить заявку»."
-
         await update.message.reply_text(response_text)
-
     except Exception as e:
         logging.error(f"GPT ERROR: {e}")
         await update.message.reply_text("❌ GPT API не отвечает. Проверь ключ или повтори позже.")
@@ -164,6 +165,7 @@ def main():
             ASK_ARREST: [CallbackQueryHandler(ask_arrest, pattern="^арест_")],
             ASK_OVERDUE: [CallbackQueryHandler(ask_overdue, pattern="^просрочка_")],
             ASK_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_amount)],
+            ASK_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_phone)],
             CONFIRM: [
                 CallbackQueryHandler(confirm, pattern="^confirm$"),
                 CallbackQueryHandler(edit, pattern="^edit$"),
@@ -194,6 +196,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
