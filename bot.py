@@ -65,13 +65,13 @@ async def ask_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return await show_summary(update, context)
 
 async def show_summary(update_or_callback, context: ContextTypes.DEFAULT_TYPE):
-    summary = f"📋 Ваша заявка:
+    summary = f"""📋 Ваша заявка:
 
 ФИО: {context.user_data['name']}
 Возраст: {context.user_data['age']}
 Аресты: {context.user_data['arrest']}
 Просрочки: {context.user_data['overdue']}
-Сумма: {context.user_data['amount']}"
+Сумма: {context.user_data['amount']}"""
     buttons = [
         [InlineKeyboardButton("✅ Отправить", callback_data="confirm")],
         [InlineKeyboardButton("✏️ Редактировать заявку", callback_data="edit")],
