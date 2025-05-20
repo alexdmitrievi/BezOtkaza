@@ -131,6 +131,7 @@ async def gpt_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_question = update.message.text
         if user_question in ["📝 Оставить заявку", "💬 Связаться с менеджером"]:
             return
+
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -138,7 +139,16 @@ async def gpt_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 {"role": "user", "content": user_question}
             ]
         )
-        await update.message.reply_text(response.choices[0].message.content)
+
+        response_text = response.choices[0].message.content.strip()
+        lowered = response_text.lower()
+
+        redirect_phrases = ["обратитесь в банк", "обратитесь в ваш банк", "обратитесь в отделение", "необходимо обратиться"]
+        if any(phrase in lowered for phrase in redirect_phrases):
+            response_text += "\n\n💡 Вы можете оставить заявку прямо здесь — и мы свяжемся с вами сами. Просто нажмите «📝 Оставить заявку»."
+
+        await update.message.reply_text(response_text)
+
     except Exception as e:
         logging.error(f"GPT ERROR: {e}")
         await update.message.reply_text("❌ GPT API не отвечает. Проверь ключ или повтори позже.")
