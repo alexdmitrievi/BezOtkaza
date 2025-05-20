@@ -42,7 +42,7 @@ async def handle_reply_buttons(update: Update, context: ContextTypes.DEFAULT_TYP
         await update.message.reply_text("Введите ваше ФИО:")
         return ASK_NAME
     elif text == "💬 Связаться с менеджером":
-        await update.message.reply_text("💬 Задайте ваш вопрос, я отвечу как менеджер банка.")
+        await update.message.reply_text("Здравствуйте! Я рад помочь вам. Чем могу быть полезен?")
         return ConversationHandler.END
     else:
         await update.message.reply_text("Пожалуйста, используйте кнопки ниже.")
@@ -129,6 +129,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def gpt_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         user_question = update.message.text
+        if user_question in ["📝 Оставить заявку", "💬 Связаться с менеджером"]:
+            return
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -182,6 +184,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
