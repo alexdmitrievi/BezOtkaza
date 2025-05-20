@@ -116,8 +116,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("ℹ️ Чтобы начать оформление заявки, введите /start.
-Если у вас есть вопрос — напишите, я помогу!")
+    await update.message.reply_text("ℹ️ Чтобы начать оформление заявки, введите /start.\nЕсли у вас есть вопрос — напишите, я помогу!")
 
 async def gpt_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
