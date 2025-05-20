@@ -10,14 +10,11 @@ from datetime import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# Настройка логов
 logging.basicConfig(level=logging.INFO)
 
-# Переменные окружения
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Google Sheets подключение
 def init_sheet():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
@@ -28,7 +25,6 @@ sheet = init_sheet()
 
 ASK_NAME, ASK_AGE, ASK_ARREST, ASK_OVERDUE, ASK_AMOUNT, CONFIRM = range(6)
 
-# Команды
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["source"] = update.message.text.split(" ")[1] if len(update.message.text.split(" ")) > 1 else "direct"
     await update.message.reply_text("👋 Привет! Я помогу вам подать заявку на кредит.\n\nВведите ваше ФИО:")
@@ -67,7 +63,7 @@ async def show_summary(update_or_callback, context: ContextTypes.DEFAULT_TYPE):
     buttons = [
         [InlineKeyboardButton("✅ Отправить", callback_data="confirm")],
         [InlineKeyboardButton("✏️ Редактировать заявку", callback_data="edit")],
-        [InlineKeyboardButton("💬 Задать вопрос менеджеру", callback_data="ask")],
+        [InlineKeyboardButton("💬 Связаться с менеджером", callback_data="ask")],
         [InlineKeyboardButton("🔁 Перезапустить", callback_data="restart")]
     ]
     if hasattr(update_or_callback, "message"):
@@ -169,6 +165,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
