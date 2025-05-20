@@ -164,9 +164,9 @@ def main():
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, gpt_reply))
 
-    # Установка меню без asyncio.run
-    async def startup():
-        await set_menu(app.bot)
+    # ✅ Важно: передаём application в startup
+    async def startup(application):
+        await set_menu(application.bot)
 
     app.post_init = startup
     app.run_polling()
