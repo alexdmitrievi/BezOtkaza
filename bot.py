@@ -113,18 +113,14 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def gpt_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        user_question = update.message.text
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "Ты вежливый и понятный менеджер банка, который консультирует клиента по вопросам кредитования физических лиц. Отвечай кратко, по делу, дружелюбно."},
-                {"role": "user", "content": user_question}
-            ]
+            messages=[{"role": "user", "content": "Привет! Что ты умеешь?"}]
         )
         await update.message.reply_text(response["choices"][0]["message"]["content"])
     except Exception as e:
-        logging.error(traceback.format_exc())
-        await update.message.reply_text("🤖 Произошла ошибка при обращении к GPT. Попробуйте позже.")
+        logging.error(f"GPT error: {e}")
+        await update.message.reply_text("❌ GPT API не отвечает.")
 
 async def ask_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("💬 Задайте ваш вопрос по кредитованию. Я постараюсь помочь как менеджер банка.")
