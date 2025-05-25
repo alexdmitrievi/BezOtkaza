@@ -31,10 +31,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [KeyboardButton("📝 Оставить заявку"), KeyboardButton("💬 Связаться с менеджером")]
         ], resize_keyboard=True, one_time_keyboard=True
     )
-    await update.message.reply_text(
-        "👋 Привет! Выберите, что хотите сделать:",
-        reply_markup=keyboard
-    )
+
+    with open("bezotkaza.png", "rb") as photo:
+        await update.message.reply_photo(photo=photo, caption="👋 Привет! Выберите, что хотите сделать:", reply_markup=keyboard)
 
 async def handle_reply_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
